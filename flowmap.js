@@ -4,9 +4,10 @@ export class Flowmap {
   constructor(renderer, options = {}) {
     const {
       size = 128,
-      falloff = 0.3,
+      falloff = 0.5,
       alpha = 1,
-      dissipation = 0.98,
+      dissipation = 0.1,
+      velocityFactor = { x: 20, y: 20 },
     } = options;
 
     this.renderer = renderer;
@@ -30,12 +31,15 @@ export class Flowmap {
     const material = new THREE.ShaderMaterial({
       uniforms: {
         tMap: { value: this.readTarget.texture },
-        uFalloff: { value: falloff * 0.5 },
+        uFalloff: { value: falloff },
         uAlpha: { value: alpha },
         uDissipation: { value: dissipation },
-        uAspect: { value: 1.0 },
+        uAspect: { value: window.innerWidth / window.innerHeight },
         uMouse: { value: new THREE.Vector2(0.5) },
         uVelocity: { value: new THREE.Vector2() },
+        uVelocityFactor: {
+          value: new THREE.Vector2(velocityFactor.x, velocityFactor.y),
+        },
       },
       vertexShader: vertexShader(),
       fragmentShader: fragmentShader(),
@@ -72,6 +76,11 @@ export class Flowmap {
   setAspect(aspect) {
     this.plane.material.uniforms.uAspect.value = aspect;
   }
+
+  setSize(width, height) {
+    this.renderTargetA.setSize(width, height);
+    this.renderTargetB.setSize(width, height);
+  }
 }
 
 function vertexShader() {
@@ -94,12 +103,13 @@ function fragmentShader() {
         uniform float uAspect;
         uniform vec2 uMouse;
         uniform vec2 uVelocity;
+        uniform vec2 uVelocityFactor;
         varying vec2 vUv;
         void main() {
             vec4 color = texture2D(tMap, vUv) * uDissipation;
             vec2 cursor = vUv - uMouse;
             cursor.x *= uAspect;
-            vec3 stamp = vec3(uVelocity * vec2(1, -1), 1.0 - pow(1.0 - min(1.0, length(uVelocity)), 3.0));
+            vec3 stamp = vec3(uVelocity *uVelocityFactor * vec2(1, -1), 1.0 - pow(1.0 - min(1.0, length(uVelocity*uVelocityFactor)), 3.0));
             float falloff = smoothstep(uFalloff, 0.0, length(cursor)) * uAlpha;
             color.rgb = mix(color.rgb, stamp, vec3(falloff));
             gl_FragColor = color;
