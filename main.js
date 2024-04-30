@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Flowmap } from "./flowmap.js"; // Ensure the path is correct
+import Framebuffer from "./framebuffer.js"; // Ensure the path is correct
 
 let camera, scene, renderer, container;
 let flowmap;
@@ -18,9 +18,7 @@ function init() {
   container.appendChild(renderer.domElement);
   let texture = new THREE.TextureLoader().load("./src/3.jpg", function () {
     texture.minFilter = THREE.LinearFilter;
-    texture.generateMipmaps = false;
-    var tex = texture.clone();
-    tex.needsUpdate = true;
+    texture.magFilter = THREE.LinearFilter;
   });
   // Camera
   camera = new THREE.OrthographicCamera();
@@ -30,12 +28,7 @@ function init() {
   scene = new THREE.Scene();
 
   // Flowmap setup
-  flowmap = new Flowmap(renderer, {
-    size: 256, // Choose the size based on performance needs
-    falloff: 0.3,
-    alpha: 0.5,
-    dissipation: 0.95,
-  });
+  flowmap = new Framebuffer(renderer);
 
   // Plane setup
   const geometry = new THREE.PlaneGeometry(2, 2);
@@ -75,7 +68,8 @@ function init() {
                 vec2 off = (tex.xy*.65)*(pow(tex.z,2.)*0.125);
                 float v = vec2(uv-(off*dist)).x;
                 vec3 col = texture2D(utexture,fract(vec2(v,uv.y))).rgb;
-                gl_FragColor = vec4(col+(flow/10.), 1.0);
+                //gl_FragColor = vec4(col+(flow/10.), 1.0);
+                gl_FragColor = vec4(flow, 1.0);
             }
         `,
   });
@@ -84,6 +78,20 @@ function init() {
 
   document.addEventListener("resize", onWindowResize);
   document.addEventListener("mousemove", onDocumentMouseMove, false);
+  document.addEventListener(
+    "mousedown",
+    () => {
+      flowmap.setMousePressed(true);
+    },
+    false
+  );
+  document.addEventListener(
+    "mouseup",
+    () => {
+      flowmap.setMousePressed(false);
+    },
+    false
+  );
   onWindowResize();
 }
 
@@ -119,8 +127,17 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  plane.geometry.dispose(); // Disposing geometry first is good practice when replacing it
-  plane.geometry = new THREE.PlaneGeometry(2, 2);
-  flowmap.setAspect(window.innerWidth / window.innerHeight);
+  // plane.geometry.dispose(); // Disposing geometry first is good practice when replacing it
+  // plane.geometry = new THREE.PlaneGeometry(2, 2);
+  // flowmap.setAspect(window.innerWidth / window.innerHeight);
+  console.log("resize");
+}
+function onDocumentMouseClick() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  // plane.geometry.dispose(); // Disposing geometry first is good practice when replacing it
+  // plane.geometry = new THREE.PlaneGeometry(2, 2);
+  // flowmap.setAspect(window.innerWidth / window.innerHeight);
   console.log("resize");
 }

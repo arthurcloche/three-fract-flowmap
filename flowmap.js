@@ -8,10 +8,11 @@ export class Flowmap {
       alpha = 1,
       dissipation = 0.1,
       velocityFactor = { x: 20, y: 20 },
+      swap = true,
     } = options;
-
+    this.options = options;
     this.renderer = renderer;
-
+    this.camera = new THREE.Camera();
     // Create two render targets for ping pong effect
     const rtOptions = {
       minFilter: THREE.LinearFilter,
@@ -60,9 +61,9 @@ export class Flowmap {
 
   update() {
     this.renderer.setRenderTarget(this.writeTarget);
-    this.renderer.render(this.scene, new THREE.Camera());
+    this.renderer.render(this.scene, this.camera);
     this.renderer.setRenderTarget(null);
-    this.swap(); // Swap the buffers
+    if (this.options.swap) this.swap(); // Swap the buffers
     // console.log("update");
   }
   setMousePosition(x, y) {
