@@ -9,11 +9,10 @@ export default function Framebuffer(renderer, options = {}) {
     uniforms: options.uniforms ?? {
       uFalloff: { value: 0.3 },
       uAlpha: { value: 0.5 },
-      uDissipation: { value: 0.95 },
-      uVelocityFactor: { value: { x: 20, y: 20 } },
+      uDissipation: { value: 0.98 },
+      uVelocityFactor: { value: { x: 10, y: 10 } },
     },
   };
-  console.log(this.options);
   this.renderer = renderer;
   // basic camera for rendering a full screen quad
   this.camera = new THREE.Camera();
@@ -122,13 +121,17 @@ function fragmentShader() {
         uniform vec2 uVelocity;
         uniform vec2 uVelocityFactor;
         varying vec2 vUv;
+
+        
+
         void main() {
             vec4 color = texture2D(uBuffer, vUv) * uDissipation;
             vec2 cursor = vUv - uMouse.xy;
             cursor.x *= uAspect;
             vec3 stamp = vec3(uVelocity *uVelocityFactor * vec2(1, -1), 1.0 - pow(1.0 - min(1.0, length(uVelocity*uVelocityFactor)), 3.0));
             float falloff = smoothstep(uFalloff, 0.0, length(cursor)) * uAlpha;
-            if(uMouse.z > 0.) color.rgb = mix(color.rgb, stamp, vec3(falloff));
+            //if(uMouse.z > 0.) color.rgb = mix(color.rgb, stamp, vec3(falloff));
+            color.rgb = mix(color.rgb, stamp, vec3(falloff));
             gl_FragColor = color;
         }
     `;
